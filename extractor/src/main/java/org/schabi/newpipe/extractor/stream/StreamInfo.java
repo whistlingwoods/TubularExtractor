@@ -364,6 +364,11 @@ public class StreamInfo extends Info {
         } catch (final Exception e) {
             streamInfo.addError(e);
         }
+        try {
+            streamInfo.setRequiresMembership(extractor.requiresMembership());
+        } catch (final Exception e) {
+            streamInfo.addError(e);
+        }
 
         streamInfo.setRelatedItems(ExtractorHelper.getRelatedItemsOrLogError(streamInfo,
                 extractor));
@@ -415,6 +420,7 @@ public class StreamInfo extends Info {
     private List<StreamSegment> streamSegments = List.of();
     private List<MetaInfo> metaInfo = List.of();
     private boolean shortFormContent = false;
+    private boolean membersOnly = false;
     private List<SponsorBlockSegment> sponsorBlockSegments = new ArrayList<>();
     @Nullable private ReturnYouTubeDislikeInfo rydInfo;
 
@@ -763,6 +769,13 @@ public class StreamInfo extends Info {
     public void setShortFormContent(final boolean isShortFormContent) {
         this.shortFormContent = isShortFormContent;
     }
+
+    public boolean requiresMembership() {
+        return membersOnly;
+    }
+
+    public void setRequiresMembership(final boolean requiresMembership) {
+        this.membersOnly = requiresMembership;
 
     public SponsorBlockSegment[] getSponsorBlockSegments() {
         return sponsorBlockSegments.toArray(new SponsorBlockSegment[0]);
