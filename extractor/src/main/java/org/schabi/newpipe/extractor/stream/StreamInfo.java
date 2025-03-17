@@ -26,6 +26,7 @@ import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.MetaInfo;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.StreamingService;
+import org.schabi.newpipe.extractor.stream.StreamInfoItem.ContentAvailability;
 import org.schabi.newpipe.extractor.exceptions.ContentNotAvailableException;
 import org.schabi.newpipe.extractor.exceptions.ContentNotSupportedException;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
@@ -365,7 +366,7 @@ public class StreamInfo extends Info {
             streamInfo.addError(e);
         }
         try {
-            streamInfo.setRequiresMembership(extractor.requiresMembership());
+            streamInfo.setContentAvailability(extractor.getContentAvailability());
         } catch (final Exception e) {
             streamInfo.addError(e);
         }
@@ -421,6 +422,7 @@ public class StreamInfo extends Info {
     private List<MetaInfo> metaInfo = List.of();
     private boolean shortFormContent = false;
     private boolean membersOnly = false;
+    private ContentAvailability contentAvailability = ContentAvailability.AVAILABLE;
     private List<SponsorBlockSegment> sponsorBlockSegments = new ArrayList<>();
     @Nullable private ReturnYouTubeDislikeInfo rydInfo;
 
@@ -770,12 +772,17 @@ public class StreamInfo extends Info {
         this.shortFormContent = isShortFormContent;
     }
 
-    public boolean requiresMembership() {
-        return membersOnly;
+    public ContentAvailability getContentAvailability() {
+        return contentAvailability;
     }
 
     public void setRequiresMembership(final boolean requiresMembership) {
         this.membersOnly = requiresMembership;
+    }
+
+    public void setContentAvailability(final ContentAvailability availablility) {
+        this.contentAvailability = availablility;
+    }
 
     public SponsorBlockSegment[] getSponsorBlockSegments() {
         return sponsorBlockSegments.toArray(new SponsorBlockSegment[0]);
