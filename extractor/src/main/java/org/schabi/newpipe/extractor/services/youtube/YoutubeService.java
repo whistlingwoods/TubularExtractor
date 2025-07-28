@@ -228,7 +228,7 @@ public class YoutubeService extends StreamingService {
                     trendingLHF,
                     YoutubeTrendingExtractor.KIOSK_ID
             );
-            list.setDefaultKiosk(YoutubeTrendingExtractor.KIOSK_ID);
+            list.setDefaultKiosk(YoutubeTrendingPodcastsEpisodesLinkHandlerFactory.KIOSK_ID);
         } catch (final Exception e) {
             throw new ExtractionException(e);
         }
