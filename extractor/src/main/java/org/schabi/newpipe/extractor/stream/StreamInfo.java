@@ -768,6 +768,7 @@ public class StreamInfo extends Info {
         return sponsorBlockSegments.toArray(new SponsorBlockSegment[0]);
     }
 
+    // CHECKSTYLE:OFF
     public void setSponsorBlockSegments(final SponsorBlockSegment[] sponsorBlockSegments) {
         this.sponsorBlockSegments.clear();
         for (SponsorBlockSegment segment : sponsorBlockSegments) {
@@ -794,6 +795,7 @@ public class StreamInfo extends Info {
             }
             i += chain.size();
         }
+    // CHECKSTYLE:ON
 
         Collections.addAll(this.sponsorBlockSegments, sponsorBlockSegments);
     }
@@ -825,7 +827,9 @@ public class StreamInfo extends Info {
         return rydInfo;
     }
 
+    // CHECKSTYLE:OFF
     public void setReturnYouTubeDislikeInfo(final @Nullable ReturnYouTubeDislikeInfo rydInfo) {
         this.rydInfo = rydInfo;
     }
+    // CHECKSTYLE:ON
 }
