@@ -13,7 +13,7 @@
         "SOCS\u003dCAE\u003d"
       ],
       "X-YouTube-Client-Version": [
-        "2.20250710.09.00"
+        "2.20260123.01.00"
       ],
       "X-YouTube-Client-Name": [
         "1"
@@ -89,14 +89,14 @@
       50,
       48,
       50,
-      53,
+      54,
       48,
-      55,
       49,
-      48,
+      50,
+      51,
       46,
       48,
-      57,
+      49,
       46,
       48,
       48,
@@ -298,7 +298,7 @@
         "application/json; charset\u003dUTF-8"
       ],
       "date": [
-        "Sat, 12 Jul 2025 10:28:19 GMT"
+        "Mon, 26 Jan 2026 18:03:59 GMT"
       ],
       "server": [
         "scaffolding on HTTPServer2"
@@ -318,7 +318,7 @@
         "0"
       ]
     },
-    "responseBody": "{\"responseContext\":{\"visitorData\":\"CgtFeTlfV1U5dFdUayjD8cjDBjIKCgJERRIEEgAgJA%3D%3D\",\"serviceTrackingParams\":[{\"service\":\"CSI\",\"params\":[{\"key\":\"c\",\"value\":\"WEB\"},{\"key\":\"cver\",\"value\":\"2.20250710.09.00\"},{\"key\":\"yt_li\",\"value\":\"0\"},{\"key\":\"GetVisitorId_rid\",\"value\":\"0x576317efc1f0ea2b\"}]},{\"service\":\"GFEEDBACK\",\"params\":[{\"key\":\"logged_in\",\"value\":\"0\"},{\"key\":\"visitor_data\",\"value\":\"CgtFeTlfV1U5dFdUayjD8cjDBjIKCgJERRIEEgAgJA%3D%3D\"}]},{\"service\":\"GUIDED_HELP\",\"params\":[{\"key\":\"logged_in\",\"value\":\"0\"}]},{\"service\":\"ECATCHER\",\"params\":[{\"key\":\"client.version\",\"value\":\"2.20250710\"},{\"key\":\"client.name\",\"value\":\"WEB\"}]}],\"mainAppWebResponseContext\":{\"loggedOut\":true},\"webResponseContextExtensionData\":{\"hasDecorated\":true}}}",
+    "responseBody": "{\"responseContext\":{\"visitorData\":\"CgtUOUVYVEFKRmRybyiP2d7LBjInCgJGUhIhEh0SGwsMDg8QERITFBUWFxgZGhscHR4fICEiIyQlJiAT\",\"serviceTrackingParams\":[{\"service\":\"CSI\",\"params\":[{\"key\":\"c\",\"value\":\"WEB\"},{\"key\":\"cver\",\"value\":\"2.20260123.01.00\"},{\"key\":\"yt_li\",\"value\":\"0\"},{\"key\":\"GetVisitorId_rid\",\"value\":\"0xedafd9a8389e0da0\"}]},{\"service\":\"GFEEDBACK\",\"params\":[{\"key\":\"logged_in\",\"value\":\"0\"},{\"key\":\"visitor_data\",\"value\":\"CgtUOUVYVEFKRmRybyiP2d7LBjInCgJGUhIhEh0SGwsMDg8QERITFBUWFxgZGhscHR4fICEiIyQlJiAT\"}]},{\"service\":\"GUIDED_HELP\",\"params\":[{\"key\":\"logged_in\",\"value\":\"0\"}]},{\"service\":\"ECATCHER\",\"params\":[{\"key\":\"client.version\",\"value\":\"2.20260123\"},{\"key\":\"client.name\",\"value\":\"WEB\"}]}],\"mainAppWebResponseContext\":{\"loggedOut\":true},\"webResponseContextExtensionData\":{\"hasDecorated\":true}}}",
     "latestUrl": "https://www.youtube.com/youtubei/v1/visitor_id?prettyPrint\u003dfalse"
   }
 }
