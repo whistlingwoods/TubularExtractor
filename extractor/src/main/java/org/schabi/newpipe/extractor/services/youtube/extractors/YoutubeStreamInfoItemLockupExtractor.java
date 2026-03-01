@@ -156,8 +156,8 @@ public class YoutubeStreamInfoItemLockupExtractor implements StreamInfoItemExtra
                 "contentImage.thumbnailViewModel.overlays")
             .streamAsJsonObjects()
             .flatMap(jsonObject -> jsonObject
-                .getObject("thumbnailOverlayBadgeViewModel")
-                .getArray("thumbnailBadges")
+                .getObject("thumbnailBottomOverlayViewModel")
+                .getArray("badges")
                 .streamAsJsonObjects())
             .map(jsonObject -> jsonObject
                 .getObject("thumbnailBadgeViewModel")
