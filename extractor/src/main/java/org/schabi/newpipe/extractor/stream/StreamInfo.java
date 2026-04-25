@@ -24,7 +24,6 @@ import org.schabi.newpipe.extractor.Image;
 import org.schabi.newpipe.extractor.Info;
 import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.MetaInfo;
-import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.StreamingService;
 import org.schabi.newpipe.extractor.exceptions.ContentNotAvailableException;
 import org.schabi.newpipe.extractor.exceptions.ContentNotSupportedException;
@@ -87,12 +86,7 @@ public class StreamInfo extends Info {
             + ']';
     }
 
-
-    public static StreamInfo getInfo(final String url) throws IOException, ExtractionException {
-        ExtractorLogger.d(TAG, "getInfo({url})", url);
-        return getInfo(NewPipe.getServiceByUrl(url), url);
-    }
-
+    // CHECKSTYLE:OFF
     public static StreamInfo getInfo(@Nonnull final StreamingService service,
                                      final String url,
                                       @Nullable final SponsorBlockApiSettings sponsorBlockApiSettings,
@@ -100,6 +94,7 @@ public class StreamInfo extends Info {
         ExtractorLogger.d(TAG, "getInfo({service},{url})", service, url);
         return getInfo(service.getStreamExtractor(url), sponsorBlockApiSettings, returnYouTubeDislikeApiSettings);
     }
+    // CHECKSTYLE:ON
 
     public static StreamInfo getInfo(
             @Nonnull final StreamExtractor extractor,
@@ -797,6 +792,7 @@ public class StreamInfo extends Info {
         return sponsorBlockSegments.toArray(new SponsorBlockSegment[0]);
     }
 
+    // CHECKSTYLE:OFF
     public void setSponsorBlockSegments(final SponsorBlockSegment[] sponsorBlockSegments) {
         this.sponsorBlockSegments.clear();
         for (SponsorBlockSegment segment : sponsorBlockSegments) {
@@ -823,6 +819,7 @@ public class StreamInfo extends Info {
             }
             i += chain.size();
         }
+    // CHECKSTYLE:ON
 
         Collections.addAll(this.sponsorBlockSegments, sponsorBlockSegments);
     }
@@ -854,7 +851,9 @@ public class StreamInfo extends Info {
         return rydInfo;
     }
 
+    // CHECKSTYLE:OFF
     public void setReturnYouTubeDislikeInfo(final @Nullable ReturnYouTubeDislikeInfo rydInfo) {
         this.rydInfo = rydInfo;
     }
+    // CHECKSTYLE:ON
 }
