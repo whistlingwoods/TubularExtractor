@@ -88,11 +88,6 @@ public class StreamInfo extends Info {
     }
 
 
-    public static StreamInfo getInfo(final String url) throws IOException, ExtractionException {
-        ExtractorLogger.d(TAG, "getInfo({url})", url);
-        return getInfo(NewPipe.getServiceByUrl(url), url);
-    }
-
     public static StreamInfo getInfo(@Nonnull final StreamingService service,
                                      final String url,
                                       @Nullable final SponsorBlockApiSettings sponsorBlockApiSettings,
