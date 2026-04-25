@@ -37,6 +37,7 @@ import org.schabi.newpipe.extractor.returnyoutubedislike.ReturnYouTubeDislikeApi
 import org.schabi.newpipe.extractor.returnyoutubedislike.ReturnYouTubeDislikeExtractorHelper;
 import org.schabi.newpipe.extractor.returnyoutubedislike.ReturnYouTubeDislikeInfo;
 import org.schabi.newpipe.extractor.utils.ExtractorHelper;
+import org.schabi.newpipe.extractor.utils.ExtractorLogger;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -53,7 +54,7 @@ import static org.schabi.newpipe.extractor.utils.Utils.isNullOrEmpty;
  * Info object for opened contents, i.e. the content ready to play.
  */
 public class StreamInfo extends Info {
-
+    private static final String TAG = StreamInfo.class.getSimpleName();
     public static class StreamExtractException extends ExtractionException {
         StreamExtractException(final String message) {
             super(message);
@@ -70,22 +71,33 @@ public class StreamInfo extends Info {
         super(serviceId, id, url, originalUrl, name);
         this.streamType = streamType;
         this.ageLimit = ageLimit;
+        ExtractorLogger.d(TAG, "Created {}", this);
     }
 
-    public static StreamInfo getInfo(
-            final String url,
-            @Nullable final SponsorBlockApiSettings sponsorBlockApiSettings,
-            @Nullable final ReturnYouTubeDislikeApiSettings returnYouTubeDislikeApiSettings)
-            throws IOException, ExtractionException {
-        return getInfo(NewPipe.getServiceByUrl(url), url, sponsorBlockApiSettings, returnYouTubeDislikeApiSettings);
+    @Override
+    public String toString() {
+        return TAG + "["
+            + "serviceId=" + getServiceId()
+            + ", url='" + getUrl() + '\''
+            + ", originalUrl='" + getOriginalUrl() + '\''
+            + ", id='" + getId() + '\''
+            + ", name='" + getName() + '\''
+            + ", streamType=" + streamType
+            + ", ageLimit=" + ageLimit
+            + ']';
     }
 
-    public static StreamInfo getInfo(
-            @Nonnull final StreamingService service,
-            final String url,
-            @Nullable final SponsorBlockApiSettings sponsorBlockApiSettings,
-            @Nullable final ReturnYouTubeDislikeApiSettings returnYouTubeDislikeApiSettings)
-            throws IOException, ExtractionException {
+
+    public static StreamInfo getInfo(final String url) throws IOException, ExtractionException {
+        ExtractorLogger.d(TAG, "getInfo({url})", url);
+        return getInfo(NewPipe.getServiceByUrl(url), url);
+    }
+
+    public static StreamInfo getInfo(@Nonnull final StreamingService service,
+                                     final String url,
+                                      @Nullable final SponsorBlockApiSettings sponsorBlockApiSettings,
+            @Nullable final ReturnYouTubeDislikeApiSettings returnYouTubeDislikeApiSettings) throws IOException, ExtractionException {
+        ExtractorLogger.d(TAG, "getInfo({service},{url})", service, url);
         return getInfo(service.getStreamExtractor(url), sponsorBlockApiSettings, returnYouTubeDislikeApiSettings);
     }
 
@@ -94,6 +106,7 @@ public class StreamInfo extends Info {
             @Nullable final SponsorBlockApiSettings sponsorBlockApiSettings,
             @Nullable final ReturnYouTubeDislikeApiSettings returnYouTubeDislikeApiSettings)
             throws ExtractionException, IOException {
+        ExtractorLogger.d(TAG, "getInfo({extractor})", extractor);
         extractor.fetchPage();
         final StreamInfo streamInfo;
         try {
