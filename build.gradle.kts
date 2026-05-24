@@ -10,7 +10,7 @@ plugins {
 allprojects {
     apply(plugin = "java-library")
 
-    version = "v0.26.0"
+    version = "v0.26.2"
 
     tasks.withType<JavaCompile> {
         options.encoding = Charsets.UTF_8.toString()
@@ -18,7 +18,7 @@ allprojects {
 
     extensions.configure<JavaPluginExtension> {
         toolchain {
-            languageVersion.set(JavaLanguageVersion.of(11))
+            languageVersion.set(JavaLanguageVersion.of(21))
         }
     }
 }
