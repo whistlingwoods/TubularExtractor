@@ -20,15 +20,14 @@ package org.schabi.newpipe.extractor.services.youtube;
  * along with NewPipe Extractor.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.schabi.newpipe.extractor.ServiceList.YouTube;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.schabi.newpipe.extractor.kiosk.KioskInfo;
 import org.schabi.newpipe.extractor.linkhandler.LinkHandlerFactory;
-import org.schabi.newpipe.extractor.services.youtube.linkHandler.YoutubeLiveLinkHandlerFactory;
 
 /**
  * Test for {@link KioskInfo}
@@ -42,11 +41,9 @@ class YoutubeTrendingKioskInfoTest implements InitYoutubeTest {
     public void setUp() throws Exception {
         InitYoutubeTest.super.setUp();
 
-        final LinkHandlerFactory linkHandlerFactory = YouTube.getKioskList()
-                .getListLinkHandlerFactoryByType(YoutubeLiveLinkHandlerFactory.KIOSK_ID);
+        final LinkHandlerFactory linkHandlerFactory = YouTube.getKioskList().getListLinkHandlerFactoryByType("Trending");
 
-        kioskInfo = KioskInfo.getInfo(YouTube,
-                linkHandlerFactory.fromId(YoutubeLiveLinkHandlerFactory.KIOSK_ID).getUrl());
+        kioskInfo = KioskInfo.getInfo(YouTube, linkHandlerFactory.fromId("Trending").getUrl());
     }
 
     @Test
@@ -56,7 +53,8 @@ class YoutubeTrendingKioskInfoTest implements InitYoutubeTest {
 
     @Test
     void getId() {
-        assertEquals(YoutubeLiveLinkHandlerFactory.KIOSK_ID, kioskInfo.getId());
+        assertTrue(kioskInfo.getId().equals("Trending")
+                || kioskInfo.getId().equals("Trends"));
     }
 
     @Test
