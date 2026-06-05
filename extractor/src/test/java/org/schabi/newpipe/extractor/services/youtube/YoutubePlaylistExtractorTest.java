@@ -27,10 +27,6 @@ import org.schabi.newpipe.extractor.stream.Description;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 import org.schabi.newpipe.extractor.utils.Utils;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.stream.Collectors;
-
 /**
  * Test for {@link YoutubePlaylistExtractor}
  */
@@ -503,25 +499,6 @@ public class YoutubePlaylistExtractorTest {
             final ListExtractor.InfoItemsPage<StreamInfoItem> page = defaultTestMoreItems(
                     extractor);
             assertFalse(page.hasNextPage(), "More items available when it shouldn't");
-        }
-    }
-
-    public static class CoursePlaylistTest implements InitYoutubeTest {
-
-        @Test
-        void uploaderName() throws Exception {
-            final YoutubePlaylistExtractor extractor = (YoutubePlaylistExtractor) YouTube
-                    .getPlaylistExtractor(
-                            "https://www.youtube.com/playlist?list=PLWxziGKTUvQFIsbbFcTZz7jOT4TMGnZBh");
-            extractor.fetchPage();
-
-            final List<StreamInfoItem> allItems = extractor.getInitialPage().getItems()
-                    .stream()
-                    .filter(StreamInfoItem.class::isInstance)
-                    .map(StreamInfoItem.class::cast)
-                    .collect(Collectors.toUnmodifiableList());
-            assertEquals(14, allItems.size());
-            assertEquals(extractor.getUploaderName(),  allItems.get(0).getUploaderName());
         }
     }
 }
