@@ -52,16 +52,12 @@ public class MediaCCCRecentKiosk extends KioskExtractor<StreamInfoItem> {
 
         // Streams in the recent kiosk are not ordered by the release date.
         // Sort them to have the latest stream at the beginning of the list.
-        final Comparator<StreamInfoItem> comparator = Comparator
-                .comparing(StreamInfoItem::getUploadDate, Comparator
-                        .nullsLast(Comparator.comparing(DateWrapper::offsetDateTime)))
+        final var comparator = Comparator.comparing(StreamInfoItem::getUploadDate,
+                        Comparator.nullsLast(Comparator.comparing(DateWrapper::getInstant)))
                 .reversed();
-        final StreamInfoItemsCollector collector = new StreamInfoItemsCollector(getServiceId(),
-                comparator);
+        final var collector = new StreamInfoItemsCollector(getServiceId(), comparator);
 
-        events.stream()
-                .filter(JsonObject.class::isInstance)
-                .map(JsonObject.class::cast)
+        events.streamAsJsonObjects()
                 .map(MediaCCCRecentKioskExtractor::new)
                 // #813 / voc/voctoweb#609 -> returns faulty data -> filter it out
                 .filter(extractor -> extractor.getDuration() > 0)

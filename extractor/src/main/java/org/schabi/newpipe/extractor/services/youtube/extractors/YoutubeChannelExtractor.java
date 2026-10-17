@@ -395,9 +395,7 @@ public class YoutubeChannelExtractor extends ChannelExtractor {
         final String url = getUrl();
         final String id = getId();
 
-        responseTabs.stream()
-                .filter(JsonObject.class::isInstance)
-                .map(JsonObject.class::cast)
+        responseTabs.streamAsJsonObjects()
                 .filter(tab -> tab.has(TAB_RENDERER))
                 .map(tab -> tab.getObject(TAB_RENDERER))
                 .forEach(tabRenderer -> {
@@ -447,6 +445,12 @@ public class YoutubeChannelExtractor extends ChannelExtractor {
                                 break;
                             case "releases":
                                 addNonVideosTab.accept(ChannelTabs.ALBUMS);
+                                break;
+                            case "podcasts":
+                                addNonVideosTab.accept(ChannelTabs.PODCASTS);
+                                break;
+                            case "courses":
+                                addNonVideosTab.accept(ChannelTabs.COURSES);
                                 break;
                             case "playlists":
                                 addNonVideosTab.accept(ChannelTabs.PLAYLISTS);

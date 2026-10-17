@@ -7,6 +7,8 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -110,12 +112,22 @@ public final class Utils {
      * @param url     the url to be tested
      */
     public static void checkUrl(final String pattern, final String url) throws ParsingException {
+        checkUrl(Pattern.compile(pattern), url);
+    }
+
+    /**
+     * Check if the url matches the pattern.
+     *
+     * @param pattern the pattern that will be used to check the url
+     * @param url     the url to be tested
+     */
+    public static void checkUrl(final Pattern pattern, final String url) throws ParsingException {
         if (isNullOrEmpty(url)) {
             throw new IllegalArgumentException("Url can't be null or empty");
         }
 
         if (!Parser.isMatch(pattern, url.toLowerCase())) {
-            throw new ParsingException("Url don't match the pattern");
+            throw new ParsingException("Url doesn't match the pattern");
         }
     }
 
@@ -399,5 +411,23 @@ public final class Utils {
         }
 
         throw new Parser.RegexException("No regex matched the input on group " + group);
+    }
+
+    public static String toSha256(final String videoId) throws NoSuchAlgorithmException {
+        final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        final byte[] bytes = digest.digest(videoId.getBytes(StandardCharsets.UTF_8));
+        final StringBuilder sb = new StringBuilder();
+
+        for (final byte b : bytes) {
+            final String hex = Integer.toHexString(0xff & b);
+
+            if (hex.length() == 1) {
+                sb.append('0');
+            }
+
+            sb.append(hex);
+        }
+
+        return sb.toString();
     }
 }

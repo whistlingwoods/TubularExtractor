@@ -23,7 +23,6 @@ import java.util.Objects;
 
 import static org.schabi.newpipe.extractor.services.peertube.extractors.PeertubeCommentsExtractor.CHILDREN;
 import static org.schabi.newpipe.extractor.services.peertube.PeertubeParsingHelper.getAvatarsFromOwnerAccountOrVideoChannelObject;
-import static org.schabi.newpipe.extractor.services.peertube.PeertubeParsingHelper.parseDateFrom;
 
 public class PeertubeCommentsInfoItemExtractor implements CommentsInfoItemExtractor {
     @Nonnull
@@ -73,8 +72,7 @@ public class PeertubeCommentsInfoItemExtractor implements CommentsInfoItemExtrac
 
     @Override
     public DateWrapper getUploadDate() throws ParsingException {
-        final String textualUploadDate = getTextualUploadDate();
-        return new DateWrapper(parseDateFrom(textualUploadDate));
+        return DateWrapper.fromInstant(getTextualUploadDate());
     }
 
     @Nonnull
@@ -84,10 +82,10 @@ public class PeertubeCommentsInfoItemExtractor implements CommentsInfoItemExtrac
         try {
             final Document doc = Jsoup.parse(htmlText);
             final var text = doc.body().text();
-            return new Description(text, Description.PLAIN_TEXT);
+            return Description.of(text, Description.Type.PLAIN_TEXT);
         } catch (final Exception e) {
             final var text = htmlText.replaceAll("(?s)<[^>]*>(\\s*<[^>]*>)*", "");
-            return new Description(text, Description.PLAIN_TEXT);
+            return Description.of(text, Description.Type.PLAIN_TEXT);
         }
     }
 

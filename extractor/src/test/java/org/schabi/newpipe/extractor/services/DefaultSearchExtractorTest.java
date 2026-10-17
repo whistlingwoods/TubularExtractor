@@ -50,6 +50,7 @@ public abstract class DefaultSearchExtractorTest extends DefaultListExtractorTes
     }
 
     @Test
+    @Override
     public void testSearchCorrected() throws Exception {
         assertEquals(isCorrectedSearch(), extractor().isCorrectedSearch());
     }
@@ -58,13 +59,14 @@ public abstract class DefaultSearchExtractorTest extends DefaultListExtractorTes
      * @see DefaultStreamExtractorTest#testMetaInfo()
      */
     @Test
+    @Override
     public void testMetaInfo() throws Exception {
         final List<MetaInfo> metaInfoList = extractor().getMetaInfo();
         final List<MetaInfo> expectedMetaInfoList = expectedMetaInfo();
 
         for (final MetaInfo expectedMetaInfo : expectedMetaInfoList) {
             final List<String> texts = metaInfoList.stream()
-                    .map(metaInfo -> metaInfo.getContent().getContent())
+                    .map(metaInfo -> metaInfo.getContent().content())
                     .collect(Collectors.toList());
             final List<String> titles = metaInfoList.stream().map(MetaInfo::getTitle).collect(Collectors.toList());
             final List<URL> urls = metaInfoList.stream().flatMap(info -> info.getUrls().stream())
@@ -72,7 +74,7 @@ public abstract class DefaultSearchExtractorTest extends DefaultListExtractorTes
             final List<String> urlTexts = metaInfoList.stream().flatMap(info -> info.getUrlTexts().stream())
                     .collect(Collectors.toList());
 
-            assertTrue(texts.contains(expectedMetaInfo.getContent().getContent()));
+            assertTrue(texts.contains(expectedMetaInfo.getContent().content()));
             assertTrue(titles.contains(expectedMetaInfo.getTitle()));
 
             for (final String expectedUrlText : expectedMetaInfo.getUrlTexts()) {

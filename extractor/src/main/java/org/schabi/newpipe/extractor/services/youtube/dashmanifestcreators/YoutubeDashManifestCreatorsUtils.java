@@ -1,14 +1,9 @@
 package org.schabi.newpipe.extractor.services.youtube.dashmanifestcreators;
 
-import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.getAndroidUserAgent;
-import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.getIosUserAgent;
 import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.getOriginReferrerHeaders;
-import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.getTvHtml5UserAgent;
-import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.isAndroidStreamingUrl;
-import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.isIosStreamingUrl;
-import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.isTvHtml5StreamingUrl;
+import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.getVisionOsUserAgent;
+import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.isVisionOsStreamingUrl;
 import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.isWebStreamingUrl;
-import static org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper.isWebEmbeddedPlayerStreamingUrl;
 import static org.schabi.newpipe.extractor.utils.Utils.isNullOrEmpty;
 
 import org.schabi.newpipe.extractor.MediaFormat;
@@ -585,9 +580,8 @@ public final class YoutubeDashManifestCreatorsUtils {
      * This method fetches, for OTF streams and for post-live-DVR streams:
      *     <ul>
      *         <li>the base URL of the stream, to which are appended {@link #SQ_0} and
-     *         {@link #RN_0} parameters, with a {@code POS} request for streaming URLs from
-     *         {@code WEB}, {@code TVHTML5}, {@code WEB_EMBEDDED_PLAYER}, {@code ANDROID} and
-     *         {@code IOS} clients;</li>
+     *         {@link #RN_0} parameters, with a {@code POST} request for streaming URLs from
+     *         {@code WEB}, and {@code VISIONOS} clients;</li>
      *         <li>for streaming URLs from HTML5 clients, the {@link #ALR_YES} param is also added.
      *         </li>
      *     </ul>
@@ -604,34 +598,26 @@ public final class YoutubeDashManifestCreatorsUtils {
                                                      @Nonnull final ItagItem itagItem,
                                                      final DeliveryType deliveryType)
             throws CreationException {
-        final boolean isTvHtml5StreamingUrl = isTvHtml5StreamingUrl(baseStreamingUrl);
-        final boolean isHtml5StreamingUrl = isWebStreamingUrl(baseStreamingUrl)
-                || isTvHtml5StreamingUrl
-                || isWebEmbeddedPlayerStreamingUrl(baseStreamingUrl);
-        final boolean isAndroidStreamingUrl = isAndroidStreamingUrl(baseStreamingUrl);
-        final boolean isIosStreamingUrl = isIosStreamingUrl(baseStreamingUrl);
-        if (isHtml5StreamingUrl) {
+        final boolean isWebStreamingUrl = isWebStreamingUrl(baseStreamingUrl);
+        if (isWebStreamingUrl) {
             baseStreamingUrl += ALR_YES;
         }
         baseStreamingUrl = appendRnSqParamsIfNeeded(baseStreamingUrl, deliveryType);
 
         final Downloader downloader = NewPipe.getDownloader();
-        if (isHtml5StreamingUrl) {
+        if (isWebStreamingUrl) {
             final String mimeTypeExpected = itagItem.getMediaFormat().getMimeType();
             if (!isNullOrEmpty(mimeTypeExpected)) {
                 return getStreamingWebUrlWithoutRedirects(downloader, baseStreamingUrl,
-                        mimeTypeExpected, isTvHtml5StreamingUrl);
+                        mimeTypeExpected);
             }
-        } else if (isAndroidStreamingUrl || isIosStreamingUrl) {
+        } else if (isVisionOsStreamingUrl(baseStreamingUrl)) {
             try {
-                final var headers = Map.of("User-Agent",
-                        List.of(isAndroidStreamingUrl ? getAndroidUserAgent(null)
-                                : getIosUserAgent(null)));
-                final byte[] emptyBody = "".getBytes(StandardCharsets.UTF_8);
-                return downloader.post(baseStreamingUrl, headers, emptyBody);
+                return downloader.post(baseStreamingUrl,
+                        Map.of("User-Agent", List.of(getVisionOsUserAgent(null))),
+                        "".getBytes(StandardCharsets.UTF_8));
             } catch (final IOException | ExtractionException e) {
-                throw new CreationException("Could not get the "
-                        + (isIosStreamingUrl ? "ANDROID" : "IOS") + " streaming URL response", e);
+                throw new CreationException("Could not get the VISIONOS streaming URL response", e);
             }
         }
 
@@ -735,8 +721,6 @@ public final class YoutubeDashManifestCreatorsUtils {
      * @param downloader               the {@link Downloader} instance to be used
      * @param streamingUrl             the streaming URL which we are trying to get a streaming URL
      *                                 without any redirection on the network and/or IP used
-     * @param isTvHtml5StreamingUrl    whether the streaming URL comes from TVHTML5 client, in
-     *                                 order to use an appropriate HTTP User-Agent header
      * @param responseMimeTypeExpected the response mime type expected from Google video servers
      * @return the {@link Response} of the stream, which should have no redirections
      */
@@ -745,15 +729,11 @@ public final class YoutubeDashManifestCreatorsUtils {
     private static Response getStreamingWebUrlWithoutRedirects(
             @Nonnull final Downloader downloader,
             @Nonnull String streamingUrl,
-            @Nonnull final String responseMimeTypeExpected,
-            final boolean isTvHtml5StreamingUrl)
+            @Nonnull final String responseMimeTypeExpected)
             throws CreationException {
         try {
             final var headers = new HashMap<>(
                     getOriginReferrerHeaders("https://www.youtube.com"));
-            if (isTvHtml5StreamingUrl) {
-                headers.put("User-Agent", List.of(getTvHtml5UserAgent()));
-            }
 
             String responseMimeType = "";
 

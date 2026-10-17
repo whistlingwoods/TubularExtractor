@@ -21,12 +21,10 @@
 package org.schabi.newpipe.extractor.services.youtube;
 
 import static org.schabi.newpipe.extractor.NewPipe.getDownloader;
-import static org.schabi.newpipe.extractor.services.youtube.ClientsConstants.ANDROID_CLIENT_VERSION;
 import static org.schabi.newpipe.extractor.services.youtube.ClientsConstants.DESKTOP_CLIENT_PLATFORM;
-import static org.schabi.newpipe.extractor.services.youtube.ClientsConstants.IOS_CLIENT_VERSION;
-import static org.schabi.newpipe.extractor.services.youtube.ClientsConstants.IOS_DEVICE_MODEL;
-import static org.schabi.newpipe.extractor.services.youtube.ClientsConstants.IOS_USER_AGENT_VERSION;
-import static org.schabi.newpipe.extractor.services.youtube.ClientsConstants.TVHTML5_USER_AGENT;
+import static org.schabi.newpipe.extractor.services.youtube.ClientsConstants.VISIONOS_CLIENT_VERSION;
+import static org.schabi.newpipe.extractor.services.youtube.ClientsConstants.VISIONOS_DEVICE_MODEL;
+import static org.schabi.newpipe.extractor.services.youtube.ClientsConstants.VISIONOS_USER_AGENT_VERSION;
 import static org.schabi.newpipe.extractor.services.youtube.ClientsConstants.WEB_CLIENT_ID;
 import static org.schabi.newpipe.extractor.services.youtube.ClientsConstants.WEB_CLIENT_NAME;
 import static org.schabi.newpipe.extractor.services.youtube.ClientsConstants.WEB_HARDCODED_CLIENT_VERSION;
@@ -38,6 +36,7 @@ import static org.schabi.newpipe.extractor.utils.Utils.HTTPS;
 import static org.schabi.newpipe.extractor.utils.Utils.getStringResultFromRegexArray;
 import static org.schabi.newpipe.extractor.utils.Utils.isNullOrEmpty;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.grack.nanojson.JsonArray;
 import com.grack.nanojson.JsonBuilder;
 import com.grack.nanojson.JsonObject;
@@ -57,6 +56,8 @@ import org.schabi.newpipe.extractor.exceptions.ReCaptchaException;
 import org.schabi.newpipe.extractor.localization.ContentCountry;
 import org.schabi.newpipe.extractor.localization.Localization;
 import org.schabi.newpipe.extractor.playlist.PlaylistInfo;
+import org.schabi.newpipe.extractor.services.youtube.protos.video.Xtags.XTags;
+import org.schabi.newpipe.extractor.services.youtube.protos.video.Xtags.KeyValuePair;
 import org.schabi.newpipe.extractor.stream.AudioTrackType;
 import org.schabi.newpipe.extractor.utils.JsonUtils;
 import org.schabi.newpipe.extractor.utils.Parser;
@@ -67,10 +68,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeParseException;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -155,6 +153,12 @@ public final class YoutubeParsingHelper {
      */
     public static final String RACY_CHECK_OK = "racyCheckOk";
 
+    public static final String STYLE = "style";
+    public static final String METADATA_BADGE_RENDERER = "metadataBadgeRenderer";
+    public static final String LABEL = "label";
+    public static final String THUMBNAIL_OVERLAYS = "thumbnailOverlays";
+    public static final String BADGES = "badges";
+
     private static String clientVersion;
 
     private static String youtubeMusicClientVersion;
@@ -182,20 +186,14 @@ public final class YoutubeParsingHelper {
     private static final Pattern C_WEB_PATTERN = Pattern.compile("&c=WEB");
     private static final Pattern C_WEB_EMBEDDED_PLAYER_PATTERN =
             Pattern.compile("&c=WEB_EMBEDDED_PLAYER");
-    private static final Pattern C_TVHTML5_PLAYER_PATTERN =
-            Pattern.compile("&c=TVHTML5");
     private static final Pattern C_ANDROID_PATTERN = Pattern.compile("&c=ANDROID");
     private static final Pattern C_IOS_PATTERN = Pattern.compile("&c=IOS");
+    private static final Pattern C_VISIONOS_PATTERN = Pattern.compile("&c=VISIONOS");
 
     private static final Set<String> GOOGLE_URLS = Set.of("google.", "m.google.", "www.google.");
-    private static final Set<String> INVIDIOUS_URLS = Set.of("invidio.us", "dev.invidio.us",
-            "www.invidio.us", "redirect.invidious.io", "invidious.snopyta.org", "yewtu.be",
-            "tube.connect.cafe", "tubus.eduvid.org", "invidious.kavin.rocks", "invidious.site",
-            "invidious-us.kavin.rocks", "piped.kavin.rocks", "vid.mint.lgbt", "invidiou.site",
-            "invidious.fdn.fr", "invidious.048596.xyz", "invidious.zee.li", "vid.puffyan.us",
-            "ytprivate.com", "invidious.namazso.eu", "invidious.silkky.cloud", "ytb.trom.tf",
-            "invidious.exonip.de", "inv.riverside.rocks", "invidious.blamefran.net", "y.com.cm",
-            "invidious.moomoo.me", "yt.cyberhost.uk");
+    private static final Set<String> INVIDIOUS_URLS = Set.of("redirect.invidious.io", "yewtu.be",
+            "piped.kavin.rocks", "piped.video", "inv.nadeko.net", "invidious.nerdvpn.de",
+            "yt.chocolatemoo53.com", "invidious.tiekoetter.com", "invidious.f5.si");
     private static final Set<String> YOUTUBE_URLS = Set.of("youtube.com", "www.youtube.com",
             "m.youtube.com", "music.youtube.com");
 
@@ -221,11 +219,6 @@ public final class YoutubeParsingHelper {
                 || host.equalsIgnoreCase("youtu.be");
     }
 
-    public static boolean isHooktubeURL(@Nonnull final URL url) {
-        final String host = url.getHost();
-        return host.equalsIgnoreCase("hooktube.com");
-    }
-
     public static boolean isInvidiousURL(@Nonnull final URL url) {
         return INVIDIOUS_URLS.contains(url.getHost().toLowerCase(Locale.ROOT));
     }
@@ -242,6 +235,10 @@ public final class YoutubeParsingHelper {
      */
     public static int parseDurationString(@Nonnull final String input)
             throws ParsingException, NumberFormatException {
+        if (!input.matches(".*\\d.*") && !input.equalsIgnoreCase("SHORTS")) {
+            throw new ParsingException("Error duration string contains no digits: " + input);
+        }
+
         // If time separator : is not detected, try . instead
         final String[] splitInput = input.contains(":")
                 ? input.split(":")
@@ -291,20 +288,6 @@ public final class YoutubeParsingHelper {
             return FEED_BASE_CHANNEL_ID + channelIdOrUser.replace("channel/", "");
         } else {
             return FEED_BASE_CHANNEL_ID + channelIdOrUser;
-        }
-    }
-
-    public static OffsetDateTime parseDateFrom(final String textualUploadDate)
-            throws ParsingException {
-        try {
-            return OffsetDateTime.parse(textualUploadDate);
-        } catch (final DateTimeParseException e) {
-            try {
-                return LocalDate.parse(textualUploadDate).atStartOfDay().atOffset(ZoneOffset.UTC);
-            } catch (final DateTimeParseException e1) {
-                throw new ParsingException("Could not parse date: \"" + textualUploadDate + "\"",
-                        e1);
-            }
         }
     }
 
@@ -525,9 +508,7 @@ public final class YoutubeParsingHelper {
                 .getArray("serviceTrackingParams");
 
         // Try to get version from initial data first
-        final Stream<JsonObject> serviceTrackingParamsStream = serviceTrackingParams.stream()
-                .filter(JsonObject.class::isInstance)
-                .map(JsonObject.class::cast);
+        final var serviceTrackingParamsStream = serviceTrackingParams.streamAsJsonObjects();
 
         clientVersion = getClientVersionFromServiceTrackingParam(
                 serviceTrackingParamsStream, "CSI", "cver");
@@ -566,9 +547,7 @@ public final class YoutubeParsingHelper {
                         serviceTrackingParam.getString("service", "")
                                 .equals(serviceName))
                 .flatMap(serviceTrackingParam -> serviceTrackingParam.getArray("params")
-                        .stream())
-                .filter(JsonObject.class::isInstance)
-                .map(JsonObject.class::cast)
+                        .streamAsJsonObjects())
                 .filter(param -> param.getString("key", "")
                         .equals(clientVersionKey))
                 .map(param -> param.getString("value"))
@@ -777,6 +756,22 @@ public final class YoutubeParsingHelper {
                     .getString("playlistId");
         }
 
+        if (navigationEndpoint.has("showDialogCommand")) {
+            try {
+                final JsonArray listItems = JsonUtils.getArray(navigationEndpoint,
+                    "showDialogCommand.panelLoadingStrategy.inlineContent.dialogViewModel"
+                    + ".customContent.listViewModel.listItems");
+
+                // the first item seems to always be the channel that actually uploaded the video,
+                // i.e. it appears in their video feed
+                final JsonObject command = JsonUtils.getObject(listItems.getObject(0),
+                    "listItemViewModel.rendererContext.commandContext.onTap.innertubeCommand");
+                return getUrlFromNavigationEndpoint(command);
+            } catch (final ParsingException p) {
+            }
+        }
+
+
         if (navigationEndpoint.has("commandMetadata")) {
             final JsonObject metadata = navigationEndpoint.getObject("commandMetadata")
                     .getObject("webCommandMetadata");
@@ -971,9 +966,7 @@ public final class YoutubeParsingHelper {
     @Nonnull
     public static List<Image> getImagesFromThumbnailsArray(
             @Nonnull final JsonArray thumbnails) {
-        return thumbnails.stream()
-                .filter(JsonObject.class::isInstance)
-                .map(JsonObject.class::cast)
+        return thumbnails.streamAsJsonObjects()
                 .filter(thumbnail -> !isNullOrEmpty(thumbnail.getString("url")))
                 .map(thumbnail -> {
                     final int height = thumbnail.getInt("height", Image.HEIGHT_UNKNOWN);
@@ -1079,7 +1072,7 @@ public final class YoutubeParsingHelper {
     }
 
     /**
-     * Get the user-agent string used as the user-agent for InnerTube requests with the Android
+     * Get the user-agent string used as the user-agent for InnerTube requests with the visionOS
      * client.
      *
      * <p>
@@ -1088,47 +1081,16 @@ public final class YoutubeParsingHelper {
      * </p>
      *
      * @param localization the {@link Localization} to set in the user-agent
-     * @return the Android user-agent used for InnerTube requests with the Android client,
+     * @return the visionOS user-agent used for InnerTube requests with the visionOS client,
      * depending on the {@link Localization} provided
      */
     @Nonnull
-    public static String getAndroidUserAgent(@Nullable final Localization localization) {
-        return "com.google.android.youtube/" + ANDROID_CLIENT_VERSION
-                + " (Linux; U; Android 15; "
-                + (localization != null ? localization : Localization.DEFAULT).getCountryCode()
-                + ") gzip";
-    }
-
-    /**
-     * Get the user-agent string used as the user-agent for InnerTube requests with the iOS
-     * client.
-     *
-     * <p>
-     * If the {@link Localization} provided is {@code null}, fallbacks to
-     * {@link Localization#DEFAULT the default one}.
-     * </p>
-     *
-     * @param localization the {@link Localization} to set in the user-agent
-     * @return the iOS user-agent used for InnerTube requests with the iOS client, depending on the
-     * {@link Localization} provided
-     */
-    @Nonnull
-    public static String getIosUserAgent(@Nullable final Localization localization) {
-        return "com.google.ios.youtube/" + IOS_CLIENT_VERSION + "(" + IOS_DEVICE_MODEL
-                + "; U; CPU iOS " + IOS_USER_AGENT_VERSION + " like Mac OS X; "
+    public static String getVisionOsUserAgent(@Nullable final Localization localization) {
+        return "com.google.visionos.youtube/" + VISIONOS_CLIENT_VERSION + "("
+                + VISIONOS_DEVICE_MODEL + "; U; CPU visionOS " + VISIONOS_USER_AGENT_VERSION
+                + " like Mac OS X; "
                 + (localization != null ? localization : Localization.DEFAULT).getCountryCode()
                 + ")";
-    }
-
-    /**
-     * Get the user-agent string used as the user-agent for InnerTube requests with the HTML5 TV
-     * client.
-     *
-     * @return the user-agent used for InnerTube requests with the TVHTML5 client
-     */
-    @Nonnull
-    public static String getTvHtml5UserAgent() {
-        return TVHTML5_USER_AGENT;
     }
 
     /**
@@ -1298,35 +1260,23 @@ public final class YoutubeParsingHelper {
     }
 
     public static boolean isVerified(final JsonArray badges) {
-        if (Utils.isNullOrEmpty(badges)) {
-            return false;
-        }
-
-        for (final Object badge : badges) {
-            final String style = ((JsonObject) badge).getObject("metadataBadgeRenderer")
-                    .getString("style");
-            if (style != null && (style.equals("BADGE_STYLE_TYPE_VERIFIED")
-                    || style.equals("BADGE_STYLE_TYPE_VERIFIED_ARTIST"))) {
-                return true;
-            }
-        }
-
-        return false;
+        return badges.streamAsJsonObjects()
+                .anyMatch(badge -> {
+                    final String style = badge.getObject(METADATA_BADGE_RENDERER).getString(STYLE);
+                    return "BADGE_STYLE_TYPE_VERIFIED".equals(style)
+                            || "BADGE_STYLE_TYPE_VERIFIED_ARTIST".equals(style);
+                });
     }
 
     public static boolean hasArtistOrVerifiedIconBadgeAttachment(
             @Nonnull final JsonArray attachmentRuns) {
-        return attachmentRuns.stream()
-                .filter(JsonObject.class::isInstance)
-                .map(JsonObject.class::cast)
+        return attachmentRuns.streamAsJsonObjects()
                 .anyMatch(attachmentRun -> attachmentRun.getObject("element")
                         .getObject("type")
                         .getObject("imageType")
                         .getObject("image")
                         .getArray("sources")
-                        .stream()
-                        .filter(JsonObject.class::isInstance)
-                        .map(JsonObject.class::cast)
+                        .streamAsJsonObjects()
                         .anyMatch(source -> {
                             final String imageName = source.getObject("clientResource")
                                     .getString("imageName");
@@ -1377,44 +1327,13 @@ public final class YoutubeParsingHelper {
     }
 
     /**
-     * Check if the streaming URL is from the YouTube {@code WEB_EMBEDDED_PLAYER} client.
+     * Check if the streaming URL is a URL from the YouTube {@code VISIONOS} client.
      *
-     * @param url the streaming URL to be checked.
-     * @return true if it's a {@code WEB_EMBEDDED_PLAYER} streaming URL, false otherwise
+     * @param url the streaming URL on which check if it's a {@code VISIONOS} streaming URL.
+     * @return true if it's a {@code VISIONOS} streaming URL, false otherwise
      */
-    public static boolean isWebEmbeddedPlayerStreamingUrl(@Nonnull final String url) {
-        return Parser.isMatch(C_WEB_EMBEDDED_PLAYER_PATTERN, url);
-    }
-
-    /**
-     * Check if the streaming URL is a URL from the YouTube {@code TVHTML5} client.
-     *
-     * @param url the streaming URL on which check if it's a {@code TVHTML5}
-     *            streaming URL.
-     * @return true if it's a {@code TVHTML5} streaming URL, false otherwise
-     */
-    public static boolean isTvHtml5StreamingUrl(@Nonnull final String url) {
-        return Parser.isMatch(C_TVHTML5_PLAYER_PATTERN, url);
-    }
-
-    /**
-     * Check if the streaming URL is a URL from the YouTube {@code ANDROID} client.
-     *
-     * @param url the streaming URL to be checked.
-     * @return true if it's a {@code ANDROID} streaming URL, false otherwise
-     */
-    public static boolean isAndroidStreamingUrl(@Nonnull final String url) {
-        return Parser.isMatch(C_ANDROID_PATTERN, url);
-    }
-
-    /**
-     * Check if the streaming URL is a URL from the YouTube {@code IOS} client.
-     *
-     * @param url the streaming URL on which check if it's a {@code IOS} streaming URL.
-     * @return true if it's a {@code IOS} streaming URL, false otherwise
-     */
-    public static boolean isIosStreamingUrl(@Nonnull final String url) {
-        return Parser.isMatch(C_IOS_PATTERN, url);
+    public static boolean isVisionOsStreamingUrl(@Nonnull final String url) {
+        return Parser.isMatch(C_VISIONOS_PATTERN, url);
     }
 
     /**
@@ -1446,34 +1365,30 @@ public final class YoutubeParsingHelper {
     }
 
     /**
-     * Extract the audio track type from a YouTube stream URL.
+     * Extract the audio track type from the formats XTags.
      * <p>
-     * The track type is parsed from the {@code xtags} URL parameter
-     * (Example: {@code acont=original:lang=en}).
+     * Example: {@code acont=original, lang=en}.
      * </p>
-     * @param streamUrl YouTube stream URL
+     * @param xtags XTags of the audio track
      * @return {@link AudioTrackType} or {@code null} if no track type was found
      */
     @Nullable
-    public static AudioTrackType extractAudioTrackType(final String streamUrl) {
-        final String xtags;
-        try {
-            xtags = Utils.getQueryValue(new URL(streamUrl), "xtags");
-        } catch (final MalformedURLException e) {
-            return null;
-        }
+    public static AudioTrackType extractAudioTrackType(@Nullable final String xtags) {
         if (xtags == null) {
             return null;
         }
-
-        String atype = null;
-        for (final String param : xtags.split(":")) {
-            final String[] kv = param.split("=", 2);
-            if (kv.length > 1 && kv[0].equals("acont")) {
-                atype = kv[1];
-                break;
-            }
+        final String atype;
+        try {
+            atype = XTags.parseFrom(Base64.getUrlDecoder().decode(xtags))
+                    .getXtagsList().stream()
+                    .filter(tag -> "acont".equals(tag.getKey()))
+                    .findFirst()
+                    .map(KeyValuePair::getValue)
+                    .orElse(null);
+        } catch (final InvalidProtocolBufferException ignored) {
+            return null;
         }
+
         if (atype == null) {
             return null;
         }
@@ -1589,5 +1504,25 @@ public final class YoutubeParsingHelper {
                 .end();
 
         return builder;
+    }
+
+    /**
+     * Gets the first collaborator, which is the channel that owns the video,
+     * i.e. the video is displayed on their channel page.
+     *
+     * @param navigationEndpoint JSON object for the navigationEndpoint
+     * @return The first collaborator in the JSON object or {@code null}
+     */
+    @Nullable
+    public static JsonObject getFirstCollaborator(final JsonObject navigationEndpoint)
+            throws ParsingException {
+        try {
+            // CHECKSTYLE:OFF
+            final JsonArray listItems = JsonUtils.getArray(navigationEndpoint, "showDialogCommand.panelLoadingStrategy.inlineContent.dialogViewModel.customContent.listViewModel.listItems");
+            // CHECKSTYLE:ON
+            return listItems.getObject(0).getObject("listItemViewModel");
+        } catch (final ParsingException e) {
+            return null;
+        }
     }
 }

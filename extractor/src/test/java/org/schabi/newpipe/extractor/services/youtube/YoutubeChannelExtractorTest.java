@@ -35,6 +35,10 @@ import java.util.List;
  */
 public class YoutubeChannelExtractorTest {
 
+    /**
+     * See <a href="https://youtube.fandom.com/wiki/Termination#Ban_Messages">here</a>
+     * for a list of account termination messages.
+     */
     public static class NotAvailable implements InitYoutubeTest {
         @Test
         void deletedFetch() throws Exception {
@@ -67,7 +71,7 @@ public class YoutubeChannelExtractorTest {
         void accountTerminatedCommunityFetch() throws Exception {
             // "This account has been terminated for violating YouTube's Community Guidelines."
             final ChannelExtractor extractor =
-                    YouTube.getChannelExtractor("https://www.youtube.com/channel/UC0AuOxCr9TZ0TtEgL1zpIgA");
+                    YouTube.getChannelExtractor("https://www.youtube.com/channel/UC-nQp2ewj2Yeg5w7VyoVBwQ");
 
             final AccountTerminatedException ex =
                     assertThrows(AccountTerminatedException.class, extractor::fetchPage);
@@ -80,18 +84,6 @@ public class YoutubeChannelExtractorTest {
             // of YouTube's policy prohibiting hate speech."
             final ChannelExtractor extractor =
                     YouTube.getChannelExtractor("https://www.youtube.com/channel/UCPWXIOPK-9myzek6jHR5yrg");
-
-            final AccountTerminatedException ex =
-                    assertThrows(AccountTerminatedException.class, extractor::fetchPage);
-            assertEquals(AccountTerminatedException.Reason.VIOLATION, ex.getReason());
-        }
-
-        @Test
-        void accountTerminatedBullyFetch() throws Exception {
-            // "This account has been terminated due to multiple or severe violations
-            // of YouTube's policy prohibiting content designed to harass, bully or threaten."
-            final ChannelExtractor extractor =
-                    YouTube.getChannelExtractor("https://youtube.com/channel/UCB1o7_gbFp2PLsamWxFenBg");
 
             final AccountTerminatedException ex =
                     assertThrows(AccountTerminatedException.class, extractor::fetchPage);
@@ -128,7 +120,7 @@ public class YoutubeChannelExtractorTest {
     static class SystemTopic implements InitYoutubeTest {
         @Test
         void noSupportedTab() throws Exception {
-            final ChannelExtractor extractor = YouTube.getChannelExtractor("https://invidio.us/channel/UC-9-kyTW8ZkZNDHQJ6FgpwQ");
+            final ChannelExtractor extractor = YouTube.getChannelExtractor("https://invidious.nerdvpn.de/channel/UC-9-kyTW8ZkZNDHQJ6FgpwQ");
 
             extractor.fetchPage();
             assertTrue(extractor.getTabs().isEmpty());
@@ -222,7 +214,8 @@ public class YoutubeChannelExtractorTest {
         @Test
         @Override
         public void testTabs() throws Exception {
-            assertTabsContain(extractor().getTabs(), ChannelTabs.VIDEOS, ChannelTabs.PLAYLISTS);
+            assertTabsContain(extractor().getTabs(), ChannelTabs.VIDEOS, ChannelTabs.SHORTS,
+                    ChannelTabs.PLAYLISTS);
             assertTrue(extractor().getTabs().stream()
                     .filter(it -> ChannelTabs.VIDEOS.equals(it.getContentFilters().get(0)))
                     .allMatch(ReadyChannelTabListLinkHandler.class::isInstance));
@@ -888,9 +881,7 @@ public class YoutubeChannelExtractorTest {
         @Override
         public void testTabs() throws Exception {
             // Gaming topic channels tabs are not yet supported
-            // However, a Shorts tab like on other channel types is returned, so it is supported
-            // Check that it is returned
-            assertTabsContain(extractor().getTabs(), ChannelTabs.SHORTS);
+            assertEmpty(extractor().getTabs());
         }
 
         @Test
@@ -972,7 +963,7 @@ public class YoutubeChannelExtractorTest {
         @Override
         @Test
         public void testDescription() throws Exception {
-            assertContains("HEY! HEY YOU! YEAH YOU!", extractor().getDescription());
+            assertContains("I cover a variety of topics", extractor().getDescription());
         }
 
         @Override

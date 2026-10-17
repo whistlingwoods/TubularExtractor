@@ -79,13 +79,7 @@ public class PeertubeStreamExtractor extends StreamExtractor {
 
     @Override
     public DateWrapper getUploadDate() throws ParsingException {
-        final String textualUploadDate = getTextualUploadDate();
-
-        if (textualUploadDate == null) {
-            return null;
-        }
-
-        return new DateWrapper(PeertubeParsingHelper.parseDateFrom(textualUploadDate));
+        return DateWrapper.fromInstant(getTextualUploadDate());
     }
 
     @Nonnull
@@ -116,7 +110,7 @@ public class PeertubeStreamExtractor extends StreamExtractor {
                 // Something went wrong when getting the full description, use the shortened one
             }
         }
-        return new Description(text, Description.MARKDOWN);
+        return Description.of(text, Description.Type.MARKDOWN);
     }
 
     @Override
@@ -486,10 +480,7 @@ public class PeertubeStreamExtractor extends StreamExtractor {
 
     private void extractLiveVideoStreams() throws ParsingException {
         try {
-            final JsonArray streamingPlaylists = json.getArray(STREAMING_PLAYLISTS);
-            streamingPlaylists.stream()
-                    .filter(JsonObject.class::isInstance)
-                    .map(JsonObject.class::cast)
+            json.getArray(STREAMING_PLAYLISTS).streamAsJsonObjects()
                     .map(stream -> new VideoStream.Builder()
                             .setId(String.valueOf(stream.getInt("id", -1)))
                             .setContent(stream.getString(PLAYLIST_URL, ""), true)
@@ -513,10 +504,10 @@ public class PeertubeStreamExtractor extends StreamExtractor {
 
         // HLS streams
         try {
-            for (final JsonObject playlist : json.getArray(STREAMING_PLAYLISTS).stream()
-                    .filter(JsonObject.class::isInstance)
-                    .map(JsonObject.class::cast)
-                    .collect(Collectors.toList())) {
+            final var playlistStream = json.getArray(STREAMING_PLAYLISTS).streamAsJsonObjects();
+            final var it = playlistStream.iterator();
+            while (it.hasNext()) {
+                final var playlist = it.next();
                 getStreamsFromArray(playlist.getArray(FILES), playlist.getString(PLAYLIST_URL));
             }
         } catch (final Exception e) {
@@ -536,11 +527,10 @@ public class PeertubeStreamExtractor extends StreamExtractor {
             */
             final boolean isInstanceUsingRandomUuidsForHlsStreams = !isNullOrEmpty(playlistUrl)
                     && playlistUrl.endsWith("-master.m3u8");
-
-            for (final JsonObject stream : streams.stream()
-                    .filter(JsonObject.class::isInstance)
-                    .map(JsonObject.class::cast)
-                    .collect(Collectors.toList())) {
+            final var streamOfStreams = streams.streamAsJsonObjects();
+            final var it = streamOfStreams.iterator();
+            while (it.hasNext()) {
+                final var stream = it.next();
 
                 // Extract stream version of streams first
                 final String url = JsonUtils.getString(stream,

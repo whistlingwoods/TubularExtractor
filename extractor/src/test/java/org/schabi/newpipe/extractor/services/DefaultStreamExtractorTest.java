@@ -1,12 +1,13 @@
 package org.schabi.newpipe.extractor.services;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import org.schabi.newpipe.extractor.ExtractorAsserts;
 import org.schabi.newpipe.extractor.InfoItemsCollector;
 import org.schabi.newpipe.extractor.MediaFormat;
 import org.schabi.newpipe.extractor.MetaInfo;
-import org.schabi.newpipe.extractor.localization.DateWrapper;
 import org.schabi.newpipe.extractor.stream.AudioStream;
+import org.schabi.newpipe.extractor.stream.ContentAvailability;
 import org.schabi.newpipe.extractor.stream.Description;
 import org.schabi.newpipe.extractor.stream.Frameset;
 import org.schabi.newpipe.extractor.stream.StreamExtractor;
@@ -16,19 +17,23 @@ import org.schabi.newpipe.extractor.stream.VideoStream;
 
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.schabi.newpipe.extractor.ExtractorAsserts.assertContains;
 import static org.schabi.newpipe.extractor.ExtractorAsserts.assertEmpty;
 import static org.schabi.newpipe.extractor.ExtractorAsserts.assertEqualsOrderIndependent;
 import static org.schabi.newpipe.extractor.ExtractorAsserts.assertGreaterOrEqual;
@@ -77,6 +82,7 @@ public abstract class DefaultStreamExtractorTest extends DefaultExtractorTest<St
     public String expectedSupportInfo() { return ""; } // default: no support info available
     public int expectedStreamSegmentsCount() { return -1; } // return 0 or greater to test (default is -1 to ignore)
     public List<MetaInfo> expectedMetaInfo() throws MalformedURLException { return Collections.emptyList(); } // default: no metadata info available
+    public ContentAvailability expectedContentAvailability() { return ContentAvailability.UNKNOWN; } // default: unknown content availability
 
     @Test
     @Override
@@ -162,13 +168,13 @@ public abstract class DefaultStreamExtractorTest extends DefaultExtractorTest<St
         assertNotNull(description);
 
         if (expectedDescriptionIsEmpty()) {
-            assertTrue(description.getContent().isEmpty(), "description is not empty");
+            assertTrue(description.content().isEmpty(), "description is not empty");
         } else {
-            assertFalse(description.getContent().isEmpty(), "description is empty");
+            assertFalse(description.content().isEmpty(), "description is empty");
         }
 
         for (final String s : expectedDescriptionContains()) {
-            ExtractorAsserts.assertContains(s, description.getContent());
+            ExtractorAsserts.assertContains(s, description.content());
         }
     }
 
@@ -193,18 +199,18 @@ public abstract class DefaultStreamExtractorTest extends DefaultExtractorTest<St
     @Test
     @Override
     public void testUploadDate() throws Exception {
-        final DateWrapper dateWrapper = extractor().getUploadDate();
+        final var dateWrapper = extractor().getUploadDate();
+        final var expectedDate = expectedUploadDate();
 
-        if (expectedUploadDate() == null) {
+        if (expectedDate == null) {
             assertNull(dateWrapper);
         } else {
             assertNotNull(dateWrapper);
 
-            final LocalDateTime expectedDateTime = LocalDateTime.parse(expectedUploadDate(),
+            final var expectedDateTime = LocalDateTime.parse(expectedDate,
                     DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
-            final LocalDateTime actualDateTime = dateWrapper.offsetDateTime().toLocalDateTime();
 
-            assertEquals(expectedDateTime, actualDateTime);
+            assertEquals(expectedDateTime, dateWrapper.getLocalDateTime(ZoneOffset.UTC));
         }
     }
 
@@ -429,6 +435,7 @@ public abstract class DefaultStreamExtractorTest extends DefaultExtractorTest<St
     }
 
     @Test
+    @Override
     public void testStreamSegmentsCount() throws Exception {
         if (expectedStreamSegmentsCount() >= 0) {
             assertEquals(expectedStreamSegmentsCount(), extractor().getStreamSegments().size());
@@ -439,13 +446,15 @@ public abstract class DefaultStreamExtractorTest extends DefaultExtractorTest<St
      * @see DefaultSearchExtractorTest#testMetaInfo()
      */
     @Test
+    @Override
     public void testMetaInfo() throws Exception {
         final List<MetaInfo> metaInfoList = extractor().getMetaInfo();
         final List<MetaInfo> expectedMetaInfoList = expectedMetaInfo();
 
+        final List<Executable> assertions = new ArrayList<>();
         for (final MetaInfo expectedMetaInfo : expectedMetaInfoList) {
             final List<String> texts = metaInfoList.stream()
-                    .map((metaInfo) -> metaInfo.getContent().getContent())
+                    .map((metaInfo) -> metaInfo.getContent().content())
                     .collect(Collectors.toList());
             final List<String> titles = metaInfoList.stream().map(MetaInfo::getTitle).collect(Collectors.toList());
             final List<URL> urls = metaInfoList.stream().flatMap(info -> info.getUrls().stream())
@@ -453,16 +462,22 @@ public abstract class DefaultStreamExtractorTest extends DefaultExtractorTest<St
             final List<String> urlTexts = metaInfoList.stream().flatMap(info -> info.getUrlTexts().stream())
                     .collect(Collectors.toList());
 
-            assertTrue(texts.contains(expectedMetaInfo.getContent().getContent()));
-            assertTrue(titles.contains(expectedMetaInfo.getTitle()));
+            assertions.add(() -> assertContains(expectedMetaInfo.getContent().content(), texts));
+            assertions.add(() -> assertContains(expectedMetaInfo.getTitle(), titles));
 
             for (final String expectedUrlText : expectedMetaInfo.getUrlTexts()) {
-                assertTrue(urlTexts.contains(expectedUrlText));
+                assertions.add(() -> assertContains(expectedUrlText, urlTexts));
             }
             for (final URL expectedUrl : expectedMetaInfo.getUrls()) {
-                assertTrue(urls.contains(expectedUrl));
+                assertions.add(() -> assertContains(expectedUrl, urls));
             }
         }
+        assertAll(assertions);
+    }
 
+    @Test
+    @Override
+    public void testContentAvailability() throws Exception {
+        assertEquals(expectedContentAvailability(), extractor().getContentAvailability());
     }
 }
